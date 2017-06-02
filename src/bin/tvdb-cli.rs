@@ -71,10 +71,17 @@ fn get_search_str() -> String {
 }
 
 fn main() {
+    let search_str = get_search_str();
+
+    if search_str.is_empty() {
+        println!("Usage: {} <search>", std::env::args().nth(0).unwrap_or("tvdb-cli".into()));
+        std::process::exit(0);
+    }
+
     let auth = exit_if_err!("Failed to get AUTH info", TvdbAuthToken::from_key("0629B785CE550C8D"));
     let auth_token = auth.get_auth_token();
 
-    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_id(&get_search_str(), auth_token));
+    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_id(&search_str, auth_token));
     let series = search.get_series_newest_first();
     search.print_series_newest_first();
 
