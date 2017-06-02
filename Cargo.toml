@@ -1,0 +1,17 @@
+[package]
+name = "tvdb-v2"
+version = "0.1.0"
+authors = ["Mohammad AlSaleh <CE.Mohammad.AlSaleh@gmail.com>"]
+description = "Rust interface to TVDB's v2 JSON API"
+repository = "https://github.com/MoSal/tvdb-v2-rs"
+keywords = ["api", "tvdb", "tv", "media", "multimedia"]
+license = "MPL 2.0"
+
+[dependencies]
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+hyper = "0.10"
+hyper-native-tls = "0.2"
+native-tls = "0.1"
+error-chain = "0.10"
