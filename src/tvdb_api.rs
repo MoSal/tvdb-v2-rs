@@ -109,21 +109,21 @@ pub struct SeriesDetailedInfo {
     overview : Option<String>,
 }
 
-// Only used for deserializing into SeriesDetailedInfo.
-// See from_bytes() below.
-#[derive(Deserialize)]
-struct SeriesDetailedInfoContainer {
-    data: SeriesDetailedInfo,
-}
-
 impl TvdbFrom for SeriesDetailedInfo {
     fn url_from_id(id: &str) -> String {
         String::from(BASE_URL) + "/series/" + id
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        // Define container
+        #[derive(Deserialize)]
+        struct SeriesDetailedInfoContainer {
+            data: SeriesDetailedInfo,
+        }
+
         // Deserialize container
         let info : SeriesDetailedInfoContainer = serde_json::from_slice(bytes)?;
+
         // Return contained data directly
         Ok(info.data)
     }
