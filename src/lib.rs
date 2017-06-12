@@ -32,6 +32,6 @@ const BASE_URL: &str = "https://api.thetvdb.com";
 
 mod tvdb_errors;
 mod tvdb_net;
+mod tvdb_from;
 pub mod tvdb_auth;
-pub mod tvdb_from;
 pub mod tvdb_api;

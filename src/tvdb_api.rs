@@ -42,6 +42,36 @@ impl SeriesSearchInfo {
     }
 }
 
+pub struct SeriesSearchParams {
+    name: Option<String>,
+    // TODO
+}
+
+impl SeriesSearchParams {
+    pub fn new() -> Self {
+        Self {
+            name: None,
+        }
+    }
+
+    pub fn name<S: ToString>(mut self, name: S) -> Self {
+        self.name = Some(name.to_string());
+        self
+    }
+
+    fn get_str(&self) -> Result<String> {
+        let mut ret = String::with_capacity(4096);
+
+        match *self {
+            Self {name: None} => Err("At least one search parameter should be set")?,
+            Self {name: Some(ref name)} => {
+                ret  = ret + "name=" + name;
+                Ok(ret)
+            },
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct SeriesSearch {
     data: Vec<SeriesSearchInfo>,
@@ -50,11 +80,15 @@ pub struct SeriesSearch {
 impl TvdbFrom for SeriesSearch {
     // id here is all search params
     fn url_from_id(id: &str) -> String {
-        String::from(BASE_URL) + "/search/series?name=" + id
+        String::from(BASE_URL) + "/search/series?" + id
     }
 }
 
 impl SeriesSearch {
+    pub fn from_params(params: &SeriesSearchParams, auth_token: &str) -> Result<Self> {
+        Self::from_id(params.get_str()?, auth_token)
+    }
+
     pub fn get_series(&self) -> &[SeriesSearchInfo] {
         &*self.data
     }
@@ -131,6 +165,10 @@ impl TvdbFrom for SeriesDetailedInfo {
 }
 
 impl SeriesDetailedInfo {
+    pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
+        <Self as TvdbFrom>::from_id(id, auth_token)
+    }
+
     pub fn get_id(&self) -> usize {
         self.id
     }
@@ -260,6 +298,10 @@ impl TvdbFrom for EpisodeList {
 }
 
 impl EpisodeList {
+    pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
+        <Self as TvdbFrom>::from_id(id, auth_token)
+    }
+
     fn get_episode_list(&self) -> &[EpisodeInfo] {
         &*self.data
     }

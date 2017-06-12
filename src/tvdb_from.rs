@@ -32,7 +32,6 @@ pub trait TvdbFrom: Sized + DeserializeOwned {
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
         // Deserialize
         let info = serde_json::from_slice(bytes)?;
-        eprintln!("deserialized successfully");
         Ok(info)
     }
 

@@ -13,8 +13,7 @@ extern crate tvdb_v2;
 
 use std::io::{self, Write};
 
-use tvdb_v2::tvdb_api::{SeriesSearch, SeriesDetailedInfo, EpisodeList};
-use tvdb_v2::tvdb_from::TvdbFrom;
+use tvdb_v2::tvdb_api::{SeriesSearch, SeriesSearchParams, SeriesDetailedInfo, EpisodeList};
 use tvdb_v2::tvdb_auth;
 
 macro_rules! exit_if_err {
@@ -30,6 +29,7 @@ macro_rules! exit_if_err {
 }
 
 fn get_num_from_stdin(msg: &str, start: usize, end: usize) -> usize {
+
     let full_msg = if start == end {
         format!("{} ({}, or 'q' to quit): ", msg, start)
     } else {
@@ -81,7 +81,8 @@ fn main() {
 
     let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
 
-    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_id(&search_str, &auth_token));
+    let search_params = SeriesSearchParams::new().name(search_str);
+    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_params(&search_params, &auth_token));
     let series = search.get_series_newest_first();
     search.print_series_newest_first();
 
