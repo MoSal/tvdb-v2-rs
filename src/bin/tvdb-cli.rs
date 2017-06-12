@@ -14,7 +14,8 @@ extern crate tvdb_v2;
 use std::io::{self, Write};
 
 use tvdb_v2::tvdb_api::{SeriesSearch, SeriesDetailedInfo, EpisodeList};
-use tvdb_v2::tvdb_from::{TvdbFrom, TvdbAuthToken};
+use tvdb_v2::tvdb_from::TvdbFrom;
+use tvdb_v2::tvdb_auth;
 
 macro_rules! exit_if_err {
     ($msg:expr, $result:expr) => {
@@ -78,10 +79,9 @@ fn main() {
         std::process::exit(0);
     }
 
-    let auth = exit_if_err!("Failed to get AUTH info", TvdbAuthToken::from_key("0629B785CE550C8D"));
-    let auth_token = auth.get_auth_token();
+    let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
 
-    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_id(&search_str, auth_token));
+    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_id(&search_str, &auth_token));
     let series = search.get_series_newest_first();
     search.print_series_newest_first();
 
@@ -94,15 +94,15 @@ fn main() {
 
     match choice {
         1 =>  {
-            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), auth_token));
+            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), &auth_token));
             series_details.print_info();
         },
         2 =>  {
-            let series_details = exit_if_err!("failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), auth_token));
-            series_details.print_info_with_seasons(auth_token);
+            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), &auth_token));
+            series_details.print_info_with_seasons(&auth_token);
         },
         3 =>  {
-            let episode_list = exit_if_err!("failed to get episode list", EpisodeList::from_id(series[idx].get_id(), auth_token));
+            let episode_list = exit_if_err!("Failed to get episode list", EpisodeList::from_id(series[idx].get_id(), &auth_token));
             episode_list.print_list(Some(series[idx].get_name()));
         },
         _ => unreachable!(),

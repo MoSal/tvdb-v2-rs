@@ -11,10 +11,11 @@
 
 use serde_json;
 
-use tvdb_errors::*;
-use tvdb_from::{TvdbFrom, BASE_URL};
-
 use std::collections::BTreeMap;
+
+use tvdb_errors::*;
+use tvdb_from::TvdbFrom;
+use BASE_URL;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct SeriesSearchInfo {
@@ -166,7 +167,7 @@ impl SeriesDetailedInfo {
     pub fn get_overview(&self) -> &str {
         match self.overview {
             Some(ref s) => &*s,
-            None => "None",
+            None => "N/A",
         }
     }
 
@@ -224,7 +225,7 @@ struct EpisodeInfo {
     #[serde(rename = "airedEpisodeNumber")]
     number: usize,
     #[serde(rename = "episodeName")]
-    name: String,
+    name: Option<String>,
     #[serde(rename = "firstAired")]
     first_aired: String,
 }
@@ -237,7 +238,10 @@ impl EpisodeInfo {
         self.number
     }
     pub fn get_name(&self) -> &str {
-        &*self.name
+        match self.name {
+            Some(ref s) => &*s,
+            None => "N/A",
+        }
     }
     pub fn get_first_aired(&self) -> &str {
         &*self.first_aired

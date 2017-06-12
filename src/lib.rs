@@ -9,6 +9,12 @@
     file, You can obtain one at <http://mozilla.org/MPL/2.0/>.
 */
 
+//! Rust interface for TVDB's JSON API v2
+//!
+//! This crate provides a native Rust interface for the JSON API v2 from [TheTVDB.com].
+//!
+//! [TheTVDB.com]: https://api.thetvdb.com/swagger
+
 #[macro_use]
 extern crate serde_derive;
 
@@ -21,6 +27,11 @@ extern crate hyper;
 extern crate native_tls;
 extern crate hyper_native_tls;
 
+const USER_AGENT: &str = "tvdb-v2-rs/0.1";
+const BASE_URL: &str = "https://api.thetvdb.com";
+
 mod tvdb_errors;
+mod tvdb_net;
+pub mod tvdb_auth;
 pub mod tvdb_from;
 pub mod tvdb_api;
