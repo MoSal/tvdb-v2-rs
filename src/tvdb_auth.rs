@@ -18,12 +18,14 @@ use tvdb_net;
 use tvdb_errors::*;
 use {BASE_URL, USER_AGENT};
 
-pub fn auth_token(api_key: &str) -> Result<String> {
+pub fn auth_token<S: ToString>(api_key: S) -> Result<String> {
     // Only use for deserialisation
     #[derive(Deserialize)]
     struct TvdbAuthToken {
         token: String,
     }
+
+    let api_key = api_key.to_string();
 
     let client = tvdb_net::mk_client()?;
     let url = String::from(BASE_URL) + "/login";
@@ -31,7 +33,7 @@ pub fn auth_token(api_key: &str) -> Result<String> {
     let content_type = "application/json".parse().map_err(|_| "invalid mime")?;
 
     let post_body = String::from(r###"{"apikey":"API_KEY"}"###);
-    let post_body = post_body.replace("API_KEY", api_key);
+    let post_body = post_body.replace("API_KEY", &api_key);
 
     // Sending a POST request to get a JWT token
     let mut resp = client.post(&url)

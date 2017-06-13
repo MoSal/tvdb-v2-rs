@@ -103,8 +103,8 @@ fn main() {
             series_details.print_info_with_seasons(&auth_token);
         },
         3 =>  {
-            let episode_list = exit_if_err!("Failed to get episode list", EpisodeList::from_id(series[idx].get_id(), &auth_token));
-            episode_list.print_list(Some(series[idx].get_name()));
+            let episode_list = exit_if_err!("Failed to get episode list", EpisodeList::from_id_with_series_name(series[idx].get_id(), series[idx].get_name(), &auth_token));
+            episode_list.print_list();
         },
         _ => unreachable!(),
     }

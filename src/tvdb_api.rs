@@ -72,7 +72,7 @@ impl SeriesSearchParams {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SeriesSearch {
     data: Vec<SeriesSearchInfo>,
 }
@@ -99,7 +99,7 @@ impl SeriesSearch {
         search_list
     }
 
-    pub fn _print_series(series: &[SeriesSearchInfo]) {
+    fn _print_series(series: &[SeriesSearchInfo]) {
         println!("{:03}  |  {: ^48}  |  {: ^11}  |  {}",
                  "Num", "Name", "First-Aired", "Status");
 
@@ -286,8 +286,10 @@ impl EpisodeInfo {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct EpisodeList {
+    #[serde(default)]
+    series_name: Option<String>,
     data: Vec<EpisodeInfo>,
 }
 
@@ -300,6 +302,12 @@ impl TvdbFrom for EpisodeList {
 impl EpisodeList {
     pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
         <Self as TvdbFrom>::from_id(id, auth_token)
+    }
+
+    pub fn from_id_with_series_name<I: ToString, N: ToString>(id: I, series_name: N, auth_token: &str) -> Result<Self> {
+        let mut ret = Self::from_id(id, auth_token)?;
+        ret.series_name = Some(series_name.to_string());
+        Ok(ret)
     }
 
     fn get_episode_list(&self) -> &[EpisodeInfo] {
@@ -325,8 +333,10 @@ impl EpisodeList {
         b_map
     }
 
-    pub fn print_list(&self, prefix: Option<&str>) {
-        let prefix = prefix.unwrap_or("");
+    pub fn print_list(&self) {
+        let empty_string = String::new();
+        let series_name = self.series_name.as_ref().unwrap_or(&empty_string);
+
         let list_by_season = self.list_by_season();
 
         for season in list_by_season.keys() {
@@ -334,7 +344,7 @@ impl EpisodeList {
             if let Some(episodes) = list_by_season.get(&season) {
                 for episode in episodes {
                     println!("  {} S{:02}E{:02}  | {: ^11} |  {}",
-                             prefix, episode.get_season(), episode.get_number(),
+                             series_name, episode.get_season(), episode.get_number(),
                              episode.get_first_aired() , episode.get_name());
                 }
             }
