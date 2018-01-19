@@ -2,9 +2,13 @@
 name = "tvdb-v2"
 version = "0.1.0"
 authors = ["Mohammad AlSaleh <CE.Mohammad.AlSaleh@gmail.com>"]
-description = "Rust interface to TVDB's v2 JSON API"
+description = "Rust interface for TVDB's JSON API v2 (with a sample interactive CLI tool)"
+documentation = "https://docs.rs/tvdb-v2"
+homepage = "https://github.com/MoSal/tvdb-v2-rs"
 repository = "https://github.com/MoSal/tvdb-v2-rs"
-keywords = ["api", "tvdb", "tv", "media", "multimedia"]
+readme = "README.md"
+keywords = ["api", "tvdb", "TheTVDB", "tv", "media", "cli", "command-line"]
+categories = ["API bindings", "Command line utilities"]
 license = "MPL 2.0"
 
 [dependencies]
