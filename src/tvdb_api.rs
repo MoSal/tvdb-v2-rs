@@ -14,7 +14,7 @@ use serde_json;
 use std::collections::BTreeMap;
 
 use tvdb_errors::*;
-use tvdb_from::TvdbFrom;
+use tvdb_from::{TvdbFrom, TvdbFromMulti};
 use BASE_URL;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -257,7 +257,7 @@ impl SeriesDetailedInfo {
 // ==============
 
 #[derive(Deserialize, Debug, Clone)]
-struct EpisodeInfo {
+pub struct EpisodeInfo {
     #[serde(rename = "airedSeason")]
     season: usize,
     #[serde(rename = "airedEpisodeNumber")]
@@ -287,9 +287,21 @@ impl EpisodeInfo {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct PageLinks {
+    first: usize,
+    last: usize,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct EpisodeList {
+    // Optionally set series name (useful for e.g. printing info)
     #[serde(default)]
     series_name: Option<String>,
+
+    // Episode lists are paginated (100 episodes/page)
+    links: PageLinks,
+
+    // The full episode list (deserialized per page)
     data: Vec<EpisodeInfo>,
 }
 
@@ -299,9 +311,25 @@ impl TvdbFrom for EpisodeList {
     }
 }
 
+impl TvdbFromMulti for EpisodeList {
+    type Element = EpisodeInfo;
+
+    fn num_pages(&self) -> usize {
+        self.links.last
+    }
+
+    fn get_data(&self) -> &[Self::Element] {
+        &*self.data
+    }
+
+    fn get_data_mut(&mut self) -> &mut Vec<Self::Element> {
+        &mut self.data
+    }
+}
+
 impl EpisodeList {
     pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
-        <Self as TvdbFrom>::from_id(id, auth_token)
+        Self::from_id_multi(id, auth_token).chain_err(|| "Failed to get episode list")
     }
 
     pub fn from_id_with_series_name<I: ToString, N: ToString>(id: I, series_name: N, auth_token: &str) -> Result<Self> {
@@ -310,7 +338,7 @@ impl EpisodeList {
         Ok(ret)
     }
 
-    fn get_episode_list(&self) -> &[EpisodeInfo] {
+    pub fn get_episode_list(&self) -> &[EpisodeInfo] {
         &*self.data
     }
 
@@ -328,6 +356,10 @@ impl EpisodeList {
                 b_map.insert(season, vec![e]);
             }
 
+        }
+
+        for season in b_map.values_mut() {
+            season.sort_by(|curr, next| curr.get_number().cmp(&next.get_number()));
         }
 
         b_map
