@@ -329,7 +329,7 @@ impl TvdbFromMulti for EpisodeList {
 
 impl EpisodeList {
     pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
-        Self::from_id_multi(id, auth_token).chain_err(|| "Failed to get episode list")
+        Self::from_id_multi(id, auth_token)
     }
 
     pub fn from_id_with_series_name<I: ToString, N: ToString>(id: I, series_name: N, auth_token: &str) -> Result<Self> {

@@ -18,9 +18,6 @@
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
-extern crate error_chain;
-
 extern crate pipeliner;
 extern crate serde;
 extern crate serde_json;
