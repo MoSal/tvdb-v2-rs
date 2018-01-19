@@ -10,11 +10,11 @@
 */
 
 use serde_json;
-use hyper::header::{UserAgent, ContentType};
+use reqwest::Client;
+use reqwest::header::{UserAgent, ContentType};
 
 use std::io::Read;
 
-use tvdb_net;
 use tvdb_errors::*;
 use {BASE_URL, USER_AGENT};
 
@@ -27,7 +27,7 @@ pub fn auth_token<S: ToString>(api_key: S) -> Result<String> {
 
     let api_key = api_key.to_string();
 
-    let client = tvdb_net::mk_client()?;
+    let client = Client::builder().build()?;
     let url = String::from(BASE_URL) + "/login";
 
     let content_type = "application/json".parse().map_err(|_| "invalid mime")?;
@@ -37,9 +37,9 @@ pub fn auth_token<S: ToString>(api_key: S) -> Result<String> {
 
     // Sending a POST request to get a JWT token
     let mut resp = client.post(&url)
-        .header(UserAgent(USER_AGENT.into()))
+        .header(UserAgent::new(USER_AGENT))
         .header(ContentType(content_type))
-        .body(post_body.as_bytes())
+        .body(post_body)
         .send()?;
 
     // Read the Response.

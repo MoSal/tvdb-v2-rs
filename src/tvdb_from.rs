@@ -9,44 +9,19 @@
     file, You can obtain one at <http://mozilla.org/MPL/2.0/>.
 */
 
-use pipeliner::Pipeline;
-
 use serde_json;
 use serde::de::DeserializeOwned;
 
-use tvdb_net;
+use reqwest::Client;
+use reqwest::header::{UserAgent, Bearer, Authorization};
+
+use pipeliner::Pipeline;
+
+use std::io::Read;
+use std::str::FromStr;
+use std::error::Error;
+
 use tvdb_errors::*;
-
-pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
-    // url=id by default
-    fn url_from_id(id: &str) -> String {
-        String::from(id)
-    }
-
-    fn bytes_from_url(url: &str, auth_token: &str) -> Result<Vec<u8>> {
-        tvdb_net::bytes_from_url(url, auth_token)
-    }
-
-    fn bytes_from_id(id: &str, auth_token: &str) -> Result<Vec<u8>> {
-        Self::bytes_from_url(&Self::url_from_id(id), auth_token)
-    }
-
-    fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        // Deserialize
-        let info = serde_json::from_slice(bytes)?;
-        Ok(info)
-    }
-
-    fn from_url(url: &str, auth_token: &str) -> Result<Self> {
-        let bytes = Self::bytes_from_url(url, auth_token)?;
-        Self::from_bytes(&*bytes)
-    }
-
-    fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
-        let id = id.to_string();
-        Self::from_url(&Self::url_from_id(&id), auth_token)
-    }
-}
 
 pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
     type Element : Clone;
@@ -78,5 +53,48 @@ pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
         }
 
         Ok(initial_self)
+    }
+}
+
+pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
+    // url=id by default
+    fn url_from_id(id: &str) -> String {
+        String::from(id)
+    }
+
+    fn bytes_from_url(url: &str, auth_token: &str) -> Result<Vec<u8>> {
+        //tvdb_net::bytes_from_url(url, auth_token)
+        let client = Client::builder().build()?;
+
+        // Creating an outgoing request.
+        let mut resp = client.get(url)
+            .header(UserAgent::new(super::USER_AGENT))
+            .header(Authorization(Bearer::from_str(auth_token).map_err(|e| e.description().to_string())?))
+            .send()?;
+
+        // Read the Response.
+        let mut buf = Vec::with_capacity(256 * 1024);
+        resp.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+
+    fn bytes_from_id(id: &str, auth_token: &str) -> Result<Vec<u8>> {
+        Self::bytes_from_url(&Self::url_from_id(id), auth_token)
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        // Deserialize
+        let info = serde_json::from_slice(bytes)?;
+        Ok(info)
+    }
+
+    fn from_url(url: &str, auth_token: &str) -> Result<Self> {
+        let bytes = Self::bytes_from_url(url, auth_token)?;
+        Self::from_bytes(&*bytes)
+    }
+
+    fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
+        let id = id.to_string();
+        Self::from_url(&Self::url_from_id(&id), auth_token)
     }
 }

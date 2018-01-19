@@ -10,14 +10,12 @@
 */
 
 use serde_json;
-use hyper;
-use native_tls;
+use reqwest;
 
 error_chain! {
     foreign_links {
         StdIO(::std::io::Error);
-        Hyper(hyper::Error);
-        NativeTls(native_tls::Error);
+        Reqwest(reqwest::Error);
         SerdeJson(serde_json::Error);
     }
 }

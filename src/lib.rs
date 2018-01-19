@@ -24,15 +24,12 @@ extern crate error_chain;
 extern crate pipeliner;
 extern crate serde;
 extern crate serde_json;
-extern crate hyper;
-extern crate native_tls;
-extern crate hyper_native_tls;
+extern crate reqwest;
 
 const USER_AGENT: &str = "tvdb-v2-rs/0.1";
 const BASE_URL: &str = "https://api.thetvdb.com";
 
 mod tvdb_errors;
-mod tvdb_net;
 mod tvdb_from;
 pub mod tvdb_auth;
 pub mod tvdb_api;
