@@ -11,7 +11,6 @@
 
 use serde_json;
 use reqwest::Client;
-use reqwest::header::{UserAgent, ContentType};
 
 use std::io::Read;
 
@@ -29,16 +28,13 @@ pub fn auth_token<S: ToString>(api_key: S) -> Result<String> {
 
     let client = Client::builder().build()?;
     let url = String::from(BASE_URL) + "/login";
-
-    let content_type = "application/json".parse().map_err(|_| "invalid mime")?;
-
     let post_body = String::from(r###"{"apikey":"API_KEY"}"###);
     let post_body = post_body.replace("API_KEY", &api_key);
 
     // Sending a POST request to get a JWT token
     let mut resp = client.post(&url)
-        .header(UserAgent::new(USER_AGENT))
-        .header(ContentType(content_type))
+        .header("user-agent", USER_AGENT)
+        .header("content-type", "application/json")
         .body(post_body)
         .send()?;
 

@@ -13,13 +13,9 @@ use serde_json;
 use serde::de::DeserializeOwned;
 
 use reqwest::Client;
-use reqwest::header::{UserAgent, Bearer, Authorization};
-
 use pipeliner::Pipeline;
 
 use std::io::Read;
-use std::str::FromStr;
-use std::error::Error;
 
 use tvdb_errors::*;
 
@@ -68,8 +64,8 @@ pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
 
         // Creating an outgoing request.
         let mut resp = client.get(url)
-            .header(UserAgent::new(super::USER_AGENT))
-            .header(Authorization(Bearer::from_str(auth_token).map_err(|e| e.description().to_string())?))
+            .header("user-agent", super::USER_AGENT)
+            .bearer_auth(auth_token)
             .send()?;
 
         // Read the Response.
