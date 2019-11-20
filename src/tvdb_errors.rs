@@ -19,6 +19,7 @@ pub type Result<T> = result::Result<T, TvdbError>;
 #[derive(Debug)]
 pub enum TvdbError {
     StdIO(::std::io::Error),
+    SystemTime(::std::time::SystemTimeError),
     SerdeJson(serde_json::Error),
     Reqwest(reqwest::Error),
     Other(String),
@@ -28,6 +29,7 @@ impl fmt::Display for TvdbError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             TvdbError::StdIO(ref e) => write!(f, "IO Error: {}", e),
+            TvdbError::SystemTime(ref e) => write!(f, "System Time Error: {}", e),
             TvdbError::SerdeJson(ref e) => write!(f, "Deserialization Error: {}", e),
             TvdbError::Reqwest(ref e) => write!(f, "Reqwest Error: {}", e),
             TvdbError::Other(ref e) => write!(f, "Error: {}", e),
@@ -38,6 +40,12 @@ impl fmt::Display for TvdbError {
 impl From<::std::io::Error> for TvdbError {
     fn from(e: ::std::io::Error) -> Self {
         TvdbError::StdIO(e)
+    }
+}
+
+impl From<::std::time::SystemTimeError> for TvdbError {
+    fn from(e: ::std::time::SystemTimeError) -> Self {
+        TvdbError::SystemTime(e)
     }
 }
 

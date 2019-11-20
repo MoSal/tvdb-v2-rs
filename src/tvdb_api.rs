@@ -12,6 +12,7 @@
 use serde_json;
 
 use std::collections::BTreeMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use tvdb_errors::*;
 use tvdb_from::{TvdbFrom, TvdbFromMulti};
@@ -69,6 +70,50 @@ impl SeriesSearchParams {
                 Ok(ret)
             },
         }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
+struct UpdatedInfo {
+    id: usize,
+    // lastUpdated: usize, // seconds since epoch
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Updated {
+    data: Vec<UpdatedInfo>,
+}
+
+impl TvdbFrom for Updated {
+    // id is fromTime
+    fn url_from_id(id: &str) -> String {
+        String::from(BASE_URL) + "/updated/query?fromTime=" + id
+    }
+}
+
+impl Updated {
+    pub fn get_ids(&self) -> Vec<usize> {
+        self.data.iter().map(|i| i.id).collect()
+    }
+
+    pub fn get_from_weeks(offset: u64, num: u64, auth_token: &str) -> Result<Self> {
+        let ws = 7 * 24 * 60 * 60;
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        let end = now - (offset * ws);
+        let mut start = end - (num *ws);
+        let mut data = Vec::with_capacity(8192);
+
+        while start <= end {
+            eprintln!("Searching week starting from {}...", start);
+            let self_i = Self::from_id(&start.to_string(), auth_token)?;
+            data.extend_from_slice(&self_i.data);
+            start += ws;
+        }
+
+        data.sort();
+        data.dedup();
+
+        Ok(Self {data})
     }
 }
 
