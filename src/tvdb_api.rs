@@ -203,10 +203,7 @@ impl SeriesDetailedInfo {
         self.rating_count
     }
     pub fn get_overview(&self) -> &str {
-        match self.overview {
-            Some(ref s) => &*s,
-            None => "N/A",
-        }
+        self.overview.as_deref().unwrap_or("N/A")
     }
 
     fn _print_info_main(&self) {
@@ -276,10 +273,7 @@ impl EpisodeInfo {
         self.number
     }
     pub fn get_name(&self) -> &str {
-        match self.name {
-            Some(ref s) => &*s,
-            None => "N/A",
-        }
+        self.name.as_deref().unwrap_or("N/A")
     }
     pub fn get_first_aired(&self) -> &str {
         &*self.first_aired
