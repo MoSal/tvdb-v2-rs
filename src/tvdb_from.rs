@@ -64,7 +64,8 @@ pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
 
         // Creating an outgoing request.
         let mut resp = client.get(url)
-            .header("user-agent", super::USER_AGENT)
+            .header("User-Agent", super::USER_AGENT)
+            .header("Accept", super::ACCEPT_API_VERSION)
             .bearer_auth(auth_token)
             .send()?;
 
