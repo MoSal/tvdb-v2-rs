@@ -24,7 +24,7 @@ pub struct SeriesSearchInfo {
     name: String,
     status: String,
     #[serde(rename = "firstAired")]
-    first_aired: String,
+    first_aired: Option<String>,
 }
 
 impl SeriesSearchInfo {
@@ -38,7 +38,7 @@ impl SeriesSearchInfo {
         &*self.status
     }
     pub fn get_first_aired(&self) -> &str {
-        &*self.first_aired
+        self.first_aired.as_deref().unwrap_or("N/A")
     }
 }
 
@@ -127,7 +127,7 @@ impl SeriesSearch {
 pub struct SeriesDetailedInfo {
     id: usize,
     #[serde(rename = "seriesName")]
-    name: String,
+    name: Option<String>,
     status: String,
     aliases: Vec<String>,
     #[serde(rename = "firstAired")]
@@ -173,7 +173,7 @@ impl SeriesDetailedInfo {
         self.id
     }
     pub fn get_name(&self) -> &str {
-        &*self.name
+        self.name.as_deref().unwrap_or_default()
     }
     pub fn get_status(&self) -> &str {
         &*self.status
@@ -210,7 +210,7 @@ impl SeriesDetailedInfo {
     }
 
     fn _print_info_main(&self) {
-        println!("{} [{}]:", self.name, self.id);
+        println!("{} [{}]:", self.get_name(), self.id);
         println!(" {: <12} {}", "First-Aired:", self.first_aired);
         println!(" {: <12} {}", "Network:", self.network);
         println!(" {: <12} {}", "PG:", self.parental_rating);
