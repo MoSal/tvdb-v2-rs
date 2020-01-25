@@ -19,8 +19,8 @@ use tvdb_v2::tvdb_auth;
 macro_rules! exit_if_err {
     ($msg:expr, $result:expr) => {
         match $result {
-            Err(_) => {
-                println!("{}.", $msg);
+            Err(e) => {
+                println!("{}: {}.", $msg, e);
                 std::process::exit(1);
             },
             Ok(ret) => ret,
