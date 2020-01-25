@@ -181,7 +181,7 @@ pub struct SeriesDetailedInfo {
     network: String,
     genre: Vec<String>,
     #[serde(rename = "rating")]
-    parental_rating: String,
+    parental_rating: Option<String>,
     #[serde(rename = "siteRating")]
     rating: f64,
     #[serde(rename = "siteRatingCount")]
@@ -239,7 +239,7 @@ impl SeriesDetailedInfo {
         &*self.genre
     }
     pub fn get_parental_rating(&self) -> &str {
-        &*self.parental_rating
+        self.parental_rating.as_deref().unwrap_or("N/A")
     }
     pub fn get_rating(&self) -> f64 {
         self.rating
@@ -255,7 +255,7 @@ impl SeriesDetailedInfo {
         println!("{} [{}]:", self.get_name(), self.id);
         println!(" {: <12} {}", "First-Aired:", self.first_aired);
         println!(" {: <12} {}", "Network:", self.network);
-        println!(" {: <12} {}", "PG:", self.parental_rating);
+        println!(" {: <12} {}", "PG:", self.get_parental_rating());
         println!(" {: <12} {}", "Status:", self.status);
         println!(" {: <12} {}", "Runtime:", self.runtime);
         println!(" {: <12} {} ({})", "Rating:", self.rating, self.rating_count);
