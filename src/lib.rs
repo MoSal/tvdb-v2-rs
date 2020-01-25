@@ -25,7 +25,7 @@ extern crate reqwest;
 
 const USER_AGENT: &str = "tvdb-v2-rs/0.1";
 const BASE_URL: &str = "https://api.thetvdb.com";
-const ACCEPT_API_VERSION: &str = "application/vnd.thetvdb.v2";
+const ACCEPT_API_VERSION: &str = "application/vnd.thetvdb.v3";
 
 mod tvdb_errors;
 mod tvdb_from;
