@@ -10,7 +10,7 @@
 */
 
 use serde_json;
-use reqwest;
+use isahc::{self, http};
 
 use std::{fmt, result};
 
@@ -21,7 +21,8 @@ pub enum TvdbError {
     StdIO(::std::io::Error),
     SystemTime(::std::time::SystemTimeError),
     SerdeJson(serde_json::Error),
-    Reqwest(reqwest::Error),
+    Isahc(isahc::Error),
+    Http(http::Error),
     Other(String),
 }
 
@@ -31,7 +32,8 @@ impl fmt::Display for TvdbError {
             TvdbError::StdIO(ref e) => write!(f, "IO Error: {}", e),
             TvdbError::SystemTime(ref e) => write!(f, "System Time Error: {}", e),
             TvdbError::SerdeJson(ref e) => write!(f, "Deserialization Error: {}", e),
-            TvdbError::Reqwest(ref e) => write!(f, "Reqwest Error: {}", e),
+            TvdbError::Isahc(ref e) => write!(f, "isahc Error: {}", e),
+            TvdbError::Http(ref e) => write!(f, "http Error: {}", e),
             TvdbError::Other(ref e) => write!(f, "Error: {}", e),
         }
     }
@@ -55,9 +57,15 @@ impl From<serde_json::Error> for TvdbError {
     }
 }
 
-impl From<reqwest::Error> for TvdbError {
-    fn from(e: reqwest::Error) -> Self {
-        TvdbError::Reqwest(e)
+impl From<isahc::Error> for TvdbError {
+    fn from(e: isahc::Error) -> Self {
+        TvdbError::Isahc(e)
+    }
+}
+
+impl From<http::Error> for TvdbError {
+    fn from(e: http::Error) -> Self {
+        TvdbError::Http(e)
     }
 }
 

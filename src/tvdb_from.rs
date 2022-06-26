@@ -10,15 +10,71 @@
 */
 
 use serde_json;
+use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
-use reqwest::Client;
-use pipeliner::Pipeline;
+use isahc::{HttpClient, HttpClientBuilder};
+use isahc::config::{Configurable, RedirectPolicy};
+use isahc::Request;
+use isahc::http::header;
+use once_cell::sync::OnceCell;
+use futures_lite::AsyncReadExt;
 
-use std::io::Read;
+use crate::tvdb_errors::*;
 
-use tvdb_errors::*;
+fn static_client() -> Result<&'static HttpClient> {
+    static CELL: OnceCell<HttpClient> = OnceCell::new();
+    let mk_client = || {
+        HttpClientBuilder::new()
+            .redirect_policy(RedirectPolicy::Follow)
+            .auto_referer()
+            .automatic_decompression(true)
+            .build()
+    };
+    Ok(CELL.get_or_try_init(mk_client)?)
+}
 
+fn static_auth_token() -> Result<&'static str> {
+    static CELL: OnceCell<String> = OnceCell::new();
+    let client = static_client()?;
+    let init_fn = || -> Result<String> {
+        // Only use for deserialisation
+        #[derive(Deserialize)]
+        struct TvdbAuthToken {
+            token: String,
+        }
+
+        let url = String::from(crate::BASE_URL) + "/login";
+        let post_body = String::from(r###"{"apikey":"API_KEY"}"###);
+        let post_body = post_body.replace("API_KEY", crate::API_KEY);
+
+        // Sending a POST request to get a JWT token
+        let req = Request::post(&url)
+            .header(header::USER_AGENT, crate::USER_AGENT)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(post_body)?;
+        let mut resp = client.send(req)?;
+
+
+        // check status
+        let http_status = resp.status();
+        if http_status.is_client_error() || http_status.is_server_error() {
+            Err(format!("response error: {} ({})", http_status.as_u16(), http_status.as_str()))?;
+        }
+
+        // Read the Response.
+        let mut bytes = Vec::with_capacity(8 * 1024);
+        std::io::Read::read_to_end(resp.body_mut(), &mut bytes)?;
+
+        // Deserialize
+        let auth_token : TvdbAuthToken  = serde_json::from_slice(&*bytes)?;
+        Ok(auth_token.token)
+    };
+    Ok(CELL.get_or_try_init(init_fn)?)
+}
+
+
+#[async_trait::async_trait]
 pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
     type Element : Clone;
 
@@ -27,23 +83,21 @@ pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
     fn get_data(&self) -> &[Self::Element];
     fn get_data_mut(&mut self) -> &mut Vec<Self::Element>;
 
-    fn from_id_multi<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
+    async fn from_id_multi<S: ToString + Send>(id: S) -> Result<Self> {
         let url = Self::url_from_id(&*id.to_string());
 
-        let mut initial_self = <Self as TvdbFrom>::from_id(id, auth_token)?;
+        let mut initial_self = <Self as TvdbFrom>::from_id(id).await?;
         let pages = initial_self.num_pages();
 
         if pages > 1 {
-            let auth_token = String::from(auth_token);
             // with_threads() is provided by the pipeliner::Pipeline trait
             // TODO: Use inclusive ranges when they are stable
             let more_pages = (2..pages+1)
-                .map(move |page| (url.clone() + &format!("?page={}", page), auth_token.clone()))
-                .with_threads(8)
-                .map(|(page_url, auth_token)| Self::from_url(&page_url, &auth_token));
+                .map(move |page| url.clone() + &format!("?page={}", page))
+                .map(move |page_url| Self::from_owned_url(page_url));
 
             for page_res in more_pages {
-                let page = page_res?;
+                let page = page_res.await?;
                 initial_self.get_data_mut().extend_from_slice(page.get_data());
             }
         }
@@ -52,46 +106,61 @@ pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
     }
 }
 
+#[async_trait::async_trait]
 pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
     // url=id by default
     fn url_from_id(id: &str) -> String {
         String::from(id)
     }
 
-    fn bytes_from_url(url: &str, auth_token: &str) -> Result<Vec<u8>> {
+    async fn bytes_from_url(url: &str) -> Result<Vec<u8>> {
         //tvdb_net::bytes_from_url(url, auth_token)
-        let client = Client::builder().build()?;
+        let client = static_client()?;
+        let auth_token = static_auth_token()?;
 
         // Creating an outgoing request.
-        let mut resp = client.get(url)
-            .header("User-Agent", super::USER_AGENT)
-            .header("Accept", super::ACCEPT_API_VERSION)
-            .bearer_auth(auth_token)
-            .send()?;
+        let req = Request::get(url)
+            .header(header::USER_AGENT, crate::USER_AGENT)
+            .header(header::ACCEPT, crate::ACCEPT_API_VERSION)
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .body(())?;
+        let mut resp = client.send_async(req).await?;
+
+        // check status
+        let http_status = resp.status();
+        if http_status.is_client_error() || http_status.is_server_error() {
+            Err(format!("response error: {} ({})", http_status.as_u16(), http_status.as_str()))?;
+        }
 
         // Read the Response.
         let mut buf = Vec::with_capacity(256 * 1024);
-        resp.read_to_end(&mut buf)?;
+        resp.body_mut().read_to_end(&mut buf).await?;
         Ok(buf)
     }
 
-    fn bytes_from_id(id: &str, auth_token: &str) -> Result<Vec<u8>> {
-        Self::bytes_from_url(&Self::url_from_id(id), auth_token)
+    async fn bytes_from_id(id: &str) -> Result<Vec<u8>> {
+        Self::bytes_from_url(&Self::url_from_id(id)).await
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
         // Deserialize
+        //eprintln!("========\n{}\n==========", String::from_utf8_lossy(bytes));
         let info = serde_json::from_slice(bytes)?;
         Ok(info)
     }
 
-    fn from_url(url: &str, auth_token: &str) -> Result<Self> {
-        let bytes = Self::bytes_from_url(url, auth_token)?;
+    async fn from_url(url: &str) -> Result<Self> {
+        let bytes = Self::bytes_from_url(url).await?;
         Self::from_bytes(&*bytes)
     }
 
-    fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
+    // for multi
+    async fn from_owned_url(url: String) -> Result<Self> {
+        Self::from_url(&url).await
+    }
+
+    async fn from_id<S: ToString + Send>(id: S) -> Result<Self> {
         let id = id.to_string();
-        Self::from_url(&Self::url_from_id(&id), auth_token)
+        Self::from_url(&Self::url_from_id(&id)).await
     }
 }

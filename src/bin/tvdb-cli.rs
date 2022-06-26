@@ -14,7 +14,6 @@ extern crate tvdb_v2;
 use std::io::{self, Write};
 
 use tvdb_v2::tvdb_api::{SeriesSearch, SeriesSearchParams, SeriesDetailedInfo, EpisodeList};
-use tvdb_v2::tvdb_auth;
 
 macro_rules! exit_if_err {
     ($msg:expr, $result:expr) => {
@@ -71,7 +70,8 @@ fn get_search_str() -> String {
     args_vec_str.join("+")
 }
 
-fn main() {
+async fn async_main() {
+    pretty_env_logger::init();
     let search_str = get_search_str();
 
     if search_str.is_empty() {
@@ -79,10 +79,10 @@ fn main() {
         std::process::exit(0);
     }
 
-    let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
+    //let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
 
     let search_params = SeriesSearchParams::new().name(search_str);
-    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_params(&search_params, &auth_token));
+    let search = exit_if_err!("Failed to get search results", SeriesSearch::from_params(&search_params).await);
     let series = search.get_series_newest_first();
     search.print_series_newest_first();
 
@@ -95,18 +95,22 @@ fn main() {
 
     match choice {
         1 =>  {
-            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), &auth_token));
+            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id()).await);
             series_details.print_info();
         },
         2 =>  {
-            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id(), &auth_token));
-            series_details.print_info_with_seasons(&auth_token);
+            let series_details = exit_if_err!("Failed to get series details", SeriesDetailedInfo::from_id(series[idx].get_id()).await);
+            series_details.print_info_with_seasons().await;
         },
         3 =>  {
-            let episode_list = exit_if_err!("Failed to get episode list", EpisodeList::from_id_with_series_name(series[idx].get_id(), series[idx].get_name(), &auth_token));
+            let episode_list = exit_if_err!("Failed to get episode list", EpisodeList::from_id_with_series_name(series[idx].get_id(), series[idx].get_name()).await);
             episode_list.print_list();
         },
         _ => unreachable!(),
     }
 
+}
+
+fn main() {
+    async_global_executor::block_on(async_main())
 }

@@ -15,19 +15,11 @@
 //!
 //! [TheTVDB.com]: https://api.thetvdb.com/swagger
 
-#[macro_use]
-extern crate serde_derive;
-
-extern crate pipeliner;
-extern crate serde;
-extern crate serde_json;
-extern crate reqwest;
-
 const USER_AGENT: &str = "tvdb-v2-rs/0.1";
 const BASE_URL: &str = "https://api.thetvdb.com";
 const ACCEPT_API_VERSION: &str = "application/vnd.thetvdb.v3";
+const API_KEY: &str = "0629B785CE550C8D";
 
 mod tvdb_errors;
 mod tvdb_from;
-pub mod tvdb_auth;
 pub mod tvdb_api;

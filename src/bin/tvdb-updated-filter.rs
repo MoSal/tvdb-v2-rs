@@ -14,7 +14,6 @@ extern crate tvdb_v2;
 use std::io::{self, Write};
 
 use tvdb_v2::tvdb_api::{Updated, SeriesDetailedInfo};
-use tvdb_v2::tvdb_auth;
 
 macro_rules! exit_if_err {
     ($msg:expr, $result:expr) => {
@@ -62,11 +61,11 @@ fn get_num_from_stdin<N: Eq + std::fmt::Display + std::str::FromStr + PartialOrd
     }
 }
 
-fn main() {
-    let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
+async fn async_main() {
+    //let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
     let offset = get_num_from_stdin("How many weeks backwards we should start searching from", 0, 100);
     let num = get_num_from_stdin("How many weeks we should search", 1, 100);
-    let updated = exit_if_err!("Failed to get updated list ids", Updated::get_from_weeks(offset, num, &auth_token));
+    let updated = exit_if_err!("Failed to get updated list ids", Updated::get_from_weeks(offset, num).await);
     let ids = updated.get_ids();
     if !ids.is_empty() {
         let id_count = ids.len();
@@ -82,7 +81,7 @@ fn main() {
         println!("{} ids found, first={}, last={}", id_count, ids[0], ids.last().unwrap());
         for (idx, id) in ids.iter().enumerate() {
             println!("({}/{}) Getting info from id {}...", idx+1, id_count, id);
-            let di = exit_if_err!("Failed to get detailed series info", SeriesDetailedInfo::from_id(id, &auth_token));
+            let di = exit_if_err!("Failed to get detailed series info", SeriesDetailedInfo::from_id(id).await);
 
             let mut pass = true;
             for filter in &filters[..] {
@@ -106,4 +105,8 @@ fn main() {
             }
         }
     }
+}
+
+fn main() {
+    async_global_executor::block_on(async_main())
 }

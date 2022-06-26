@@ -10,13 +10,14 @@
 */
 
 use serde_json;
+use serde::Deserialize;
 
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use tvdb_errors::*;
-use tvdb_from::{TvdbFrom, TvdbFromMulti};
-use BASE_URL;
+use crate::tvdb_errors::*;
+use crate::tvdb_from::{TvdbFrom, TvdbFromMulti};
+use crate::BASE_URL;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct SeriesSearchInfo {
@@ -84,6 +85,7 @@ pub struct Updated {
     data: Vec<UpdatedInfo>,
 }
 
+
 impl TvdbFrom for Updated {
     // id is fromTime
     fn url_from_id(id: &str) -> String {
@@ -96,7 +98,7 @@ impl Updated {
         self.data.iter().map(|i| i.id).collect()
     }
 
-    pub fn get_from_weeks(offset: u64, num: u64, auth_token: &str) -> Result<Self> {
+    pub async fn get_from_weeks(offset: u64, num: u64) -> Result<Self> {
         let ws = 7 * 24 * 60 * 60;
         let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
         let end = now - (offset * ws);
@@ -105,7 +107,7 @@ impl Updated {
 
         while start <= end {
             eprintln!("Searching week starting from {}...", start);
-            let self_i = Self::from_id(&start.to_string(), auth_token)?;
+            let self_i = Self::from_id(&start.to_string()).await?;
             data.extend_from_slice(&self_i.data);
             start += ws;
         }
@@ -130,8 +132,8 @@ impl TvdbFrom for SeriesSearch {
 }
 
 impl SeriesSearch {
-    pub fn from_params(params: &SeriesSearchParams, auth_token: &str) -> Result<Self> {
-        Self::from_id(params.get_str()?, auth_token)
+    pub async fn from_params(params: &SeriesSearchParams) -> Result<Self> {
+        Self::from_id(params.get_str()?).await
     }
 
     pub fn get_series(&self) -> &[SeriesSearchInfo] {
@@ -210,8 +212,8 @@ impl TvdbFrom for SeriesDetailedInfo {
 }
 
 impl SeriesDetailedInfo {
-    pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
-        <Self as TvdbFrom>::from_id(id, auth_token)
+    pub async fn from_id<S: ToString + Send>(id: S) -> Result<Self> {
+        <Self as TvdbFrom>::from_id(id).await
     }
 
     pub fn get_id(&self) -> usize {
@@ -271,8 +273,8 @@ impl SeriesDetailedInfo {
         println!("[{}]", overview);
     }
 
-    fn _print_info_seasons(&self, auth_token: &str) {
-        if let Ok(ep_list) = EpisodeList::from_id(self.id, auth_token) {
+    async fn _print_info_seasons(&self) {
+        if let Ok(ep_list) = EpisodeList::from_id(self.id).await {
             println!(" {: <12}", "Seasons:");
             for s in ep_list.list_by_season().keys() {
                 if let Some(s_info) = SeasonInfo::from_episode_list(&ep_list, *s) {
@@ -289,9 +291,9 @@ impl SeriesDetailedInfo {
         self._print_info_overview();
     }
 
-    pub fn print_info_with_seasons(&self, auth_token: &str) {
+    pub async fn print_info_with_seasons(&self) {
         self._print_info_main();
-        self._print_info_seasons(auth_token);
+        self._print_info_seasons().await;
         self._print_info_overview();
     }
 }
@@ -367,12 +369,12 @@ impl TvdbFromMulti for EpisodeList {
 }
 
 impl EpisodeList {
-    pub fn from_id<S: ToString>(id: S, auth_token: &str) -> Result<Self> {
-        Self::from_id_multi(id, auth_token)
+    pub async fn from_id<S: ToString + Send>(id: S) -> Result<Self> {
+        Self::from_id_multi(id).await
     }
 
-    pub fn from_id_with_series_name<I: ToString, N: ToString>(id: I, series_name: N, auth_token: &str) -> Result<Self> {
-        let mut ret = Self::from_id(id, auth_token)?;
+    pub async fn from_id_with_series_name<I: ToString + Send, N: ToString>(id: I, series_name: N) -> Result<Self> {
+        let mut ret = Self::from_id(id).await?;
         ret.series_name = Some(series_name.to_string());
         Ok(ret)
     }
