@@ -106,7 +106,7 @@ impl Updated {
         let mut data = Vec::with_capacity(8192);
 
         while start <= end {
-            eprintln!("Searching week starting from {}...", start);
+            eprintln!("Searching week starting from {start}...");
             let self_i = Self::from_id(&start.to_string()).await?;
             data.extend_from_slice(&self_i.data);
             start += ws;
@@ -270,7 +270,7 @@ impl SeriesDetailedInfo {
             .replace('\n', " ")
             .replace("  ", " ");
 
-        println!("[{}]", overview);
+        println!("[{overview}]");
     }
 
     async fn _print_info_seasons(&self) {
@@ -329,7 +329,8 @@ impl EpisodeInfo {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct PageLinks {
-    first: usize,
+    #[serde(rename="first")]
+    _first: usize,
     last: usize,
 }
 
@@ -413,7 +414,7 @@ impl EpisodeList {
         let list_by_season = self.list_by_season();
 
         for season in list_by_season.keys() {
-            println!("Season {:2}:", season);
+            println!("Season {season:2}:");
             if let Some(episodes) = list_by_season.get(&season) {
                 for episode in episodes {
                     println!("  {} S{:02}E{:02}  | {: ^11} |  {}",

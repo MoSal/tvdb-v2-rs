@@ -59,7 +59,7 @@ fn static_auth_token() -> Result<&'static str> {
         // check status
         let http_status = resp.status();
         if http_status.is_client_error() || http_status.is_server_error() {
-            Err(format!("response error: {} ({})", http_status.as_u16(), http_status.as_str()))?;
+            Err(format!("response error {}", http_status.as_u16()))?;
         }
 
         // Read the Response.
@@ -93,7 +93,7 @@ pub(crate) trait TvdbFromMulti: TvdbFrom + Send + 'static {
             // with_threads() is provided by the pipeliner::Pipeline trait
             // TODO: Use inclusive ranges when they are stable
             let more_pages = (2..pages+1)
-                .map(move |page| url.clone() + &format!("?page={}", page))
+                .map(move |page| url.clone() + &format!("?page={page}"))
                 .map(move |page_url| Self::from_owned_url(page_url));
 
             for page_res in more_pages {
@@ -122,14 +122,14 @@ pub(crate) trait TvdbFrom: Sized + DeserializeOwned {
         let req = Request::get(url)
             .header(header::USER_AGENT, crate::USER_AGENT)
             .header(header::ACCEPT, crate::ACCEPT_API_VERSION)
-            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .header(header::AUTHORIZATION, format!("Bearer {auth_token}"))
             .body(())?;
         let mut resp = client.send_async(req).await?;
 
         // check status
         let http_status = resp.status();
         if http_status.is_client_error() || http_status.is_server_error() {
-            Err(format!("response error: {} ({})", http_status.as_u16(), http_status.as_str()))?;
+            Err(format!("response error {}", http_status.as_u16()))?;
         }
 
         // Read the Response.

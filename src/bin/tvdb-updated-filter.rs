@@ -30,12 +30,12 @@ macro_rules! exit_if_err {
 fn get_num_from_stdin<N: Eq + std::fmt::Display + std::str::FromStr + PartialOrd>(msg: &str, start: N, end: N) -> N {
 
     let full_msg = if start == end {
-        format!("{} ({}, or 'q' to quit): ", msg, start)
+        format!("{msg} ({start}, or 'q' to quit): ")
     } else {
-        format!("{} ([{}-{}], or 'q' to quit): ", msg, start, end)
+        format!("{msg} ([{start}-{end}], or 'q' to quit): ")
     };
 
-    print!("\n{}", full_msg);
+    print!("\n{full_msg}");
     exit_if_err!("Flushing stdout failed", io::stdout().flush());
 
     loop {
@@ -56,13 +56,12 @@ fn get_num_from_stdin<N: Eq + std::fmt::Display + std::str::FromStr + PartialOrd
             }
         }
 
-        print!("\nInvalid input.\n{}", full_msg);
+        print!("\nInvalid input.\n{full_msg}");
         exit_if_err!("Flushing stdout failed", io::stdout().flush());
     }
 }
 
 async fn async_main() {
-    //let auth_token = exit_if_err!("Failed to get AUTH token", tvdb_auth::auth_token("0629B785CE550C8D"));
     let offset = get_num_from_stdin("How many weeks backwards we should start searching from", 0, 100);
     let num = get_num_from_stdin("How many weeks we should search", 1, 100);
     let updated = exit_if_err!("Failed to get updated list ids", Updated::get_from_weeks(offset, num).await);
@@ -78,9 +77,10 @@ async fn async_main() {
             Box::new(|x| x.get_genre().iter().find(|g| &**g == "Crime").is_none()),
             Box::new(|x| x.get_genre().iter().find(|g| &**g == "Action").is_none()),
         ];
-        println!("{} ids found, first={}, last={}", id_count, ids[0], ids.last().unwrap());
+        println!("{id_count} ids found, first={}, last={}", ids[0], ids.last().unwrap());
         for (idx, id) in ids.iter().enumerate() {
-            println!("({}/{}) Getting info from id {}...", idx+1, id_count, id);
+            let n = idx + 1;
+            println!("({n}/{id_count}) Getting info from id {id}...");
             let di = exit_if_err!("Failed to get detailed series info", SeriesDetailedInfo::from_id(id).await);
 
             let mut pass = true;
@@ -100,8 +100,9 @@ async fn async_main() {
         if !filtered.is_empty() {
             println!("Filtered list:");
             for (idx, di) in filtered.iter().enumerate() {
-                println!("{}. rating: {:>4.2}, votes: {:>4}, first-aired: {:>12} {}",
-                         idx+1, di.get_rating(), di.get_rating_count(), di.get_first_aired(), di.get_name());
+                let n = idx + 1;
+                println!("{n}. rating: {:>4.2}, votes: {:>4}, first-aired: {:>12} {}",
+                         di.get_rating(), di.get_rating_count(), di.get_first_aired(), di.get_name());
             }
         }
     }

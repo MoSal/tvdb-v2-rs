@@ -19,7 +19,7 @@ macro_rules! exit_if_err {
     ($msg:expr, $result:expr) => {
         match $result {
             Err(e) => {
-                println!("{}: {}.", $msg, e);
+                println!("{}: {e}.", $msg);
                 std::process::exit(1);
             },
             Ok(ret) => ret,
@@ -30,9 +30,9 @@ macro_rules! exit_if_err {
 fn get_num_from_stdin(msg: &str, start: usize, end: usize) -> usize {
 
     let full_msg = if start == end {
-        format!("{} ({}, or 'q' to quit): ", msg, start)
+        format!("{msg} ({start}, or 'q' to quit): ")
     } else {
-        format!("{} ([{}-{}], or 'q' to quit): ", msg, start, end)
+        format!("{msg} ([{start}-{end}], or 'q' to quit): ")
     };
 
     print!("\n{}", full_msg);
@@ -56,7 +56,7 @@ fn get_num_from_stdin(msg: &str, start: usize, end: usize) -> usize {
             }
         }
 
-        print!("\nInvalid input.\n{}", full_msg);
+        print!("\nInvalid input.\n{full_msg}");
         exit_if_err!("Flushing stdout failed", io::stdout().flush());
     }
 }
